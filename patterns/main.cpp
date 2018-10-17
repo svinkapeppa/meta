@@ -1,90 +1,154 @@
 #include <iostream>
+#include <vector>
 
+// Template parameters, that can be passed to `Server` class
 enum class Role {
-	Mediator,
-	Proxy,
-	Observer,
+  Default,        //                                    Dummy `Role`, which is needed for initialization
+  Mediator,       //                          `Server` becomes a `Mediator` between `Client` and `Worker`
+  Proxy,          //            `Server` becomes a proxied variant of `Worker`, which is used by `Client`
+  Observer,       //       `Server` becomes an `Observer` and notifies `Client` about changes in `Worker`
 };
 
-class IB {
+// Interface for `Worker`
+class WorkerInterface {
 public:
-	void virtual action() = 0;
+  // `Worker` can either perform some action, or update its internal state
+  void virtual action(int=-1) = 0;
+  void virtual update(int) = 0;
 };
 
-class B : public IB {
+// Concrete `Worker`
+class Worker : public WorkerInterface {
 public:
-	void action() {
-		std::cout << "Action performed" << std::endl;
-	}
+  Worker(WorkerInterface& _server) : server(_server), state(0) {}
+
+  // Get `Worker` internal state
+  void action(int=-1) {
+    std::cout << "Worker internal state is " << state << std::endl;
+  }
+
+  // Set `Worker` internal state
+  void update(int _state) {
+    state = _state;
+    server.action(state);
+  }
+
+private:
+  // `Worker` works with some `Server`
+  WorkerInterface& server;
+
+  // `Worker` has some internal state
+  int state;
 };
 
+// Concrete `Client`
+class Client {
+public:
+  // Perform action on `Worker`
+  void action(WorkerInterface& worker) {
+    worker.action();
+  }
+
+  // Notify everyone, that `Client` is updated
+  void update() {
+    std::cout << "Client was updated" << std::endl;
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Here comes partial template specialization
 template<Role>
-class C {};
+class Server {};
 
-class A {
-public:
-	void action(IB& b) {
-		b.action();
-	}
-
-	void update() {
-		std::cout << "Updated" << std::endl;
-	}
+template<>
+class Server<Role::Default> : public WorkerInterface {
+  void action(int) {}
+  void update(int) {}
 };
 
 template<>
-class C<Role::Mediator> : public IB {
+class Server<Role::Mediator> : public WorkerInterface {
 public:
-	void action() {
-		std::cout << "This `action` call was done via `Mediator`" << std::endl;
-		b[0].action();
-		b[1].action();
-	}
+  Server() {
+    Server<Role::Default> server_default;
+    Worker _worker1(server_default);
+    Worker _worker2(server_default);
+    workers.push_back(_worker1);
+    workers.push_back(_worker2);
+  }
 
-	B b[2];
+  void action(int=-1) {
+    std::cout << "This `action` call was done via `Mediator`" << std::endl;
+    workers[0].action();
+    workers[1].action();  
+  }
+
+  void update(int) {}
+ 
+private:
+  std::vector<Worker> workers;
 };
 
 template<>
-class C<Role::Proxy> : public IB {
+class Server<Role::Proxy> : public WorkerInterface {
 public:
-	C(IB* _ib) : ib(_ib) {}
+  Server(WorkerInterface& _worker) : worker(_worker) {}
 
-	void action() {
-		std::cout << "This `action` call was proxed" << std::endl;
-		ib -> action();
-	}
+  void action(int=-1) {
+    std::cout << "This `action` call was proxied" << std::endl;
+    worker.action();
+  }
 
-	IB* ib;
+  void update(int) {}
+
+private:
+  WorkerInterface& worker;
 };
 
 template<>
-class C<Role::Observer> {
+class Server<Role::Observer> : public WorkerInterface {
 public:
-	C(A* _a, B* _b) : a(_a), b(_b) {}
+  Server(Client& _client) : client(_client) {}
 
-	void action() {
-		std::cout << "Notification from `Observer`" << std::endl;
-		a -> update();
-	}
+  void action(int state = -1) {
+    std::cout << "Notification from `Observer`" << std::endl;
+    std::cout << "Worker's internal state changed to " << state << std::endl;
+    client.update();
+  }
 
-	A* a;
-	B* b;
+  void update(int) {}
+
+private:
+  Client& client;
 };
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int main() {
-	A a;
-	B b;
-	C<Role::Mediator> c_mediator;
-	C<Role::Proxy> c_proxy(&b);
-	C<Role::Observer> c_observer(&a, &b);
+  // Some real `Client`
+  Client client;
 
-	a.action(c_mediator);
+  // Dummy objects, needed for further usage and initialization
+  Server<Role::Default> server_default;
+  Worker worker_default(server_default);
+  
+  // Different types of `Servers`
+  Server<Role::Mediator> server_mediator;
+  Server<Role::Proxy> server_proxy(worker_default);
+  Server<Role::Observer> server_observer(client);
+  
+  // Concrete `Worker`
+  Worker worker(server_observer);
 
-	std::cout << std::endl;
+  // `Mediator` test
+  client.action(server_mediator);
+  std::cout << std::endl;
 
-	a.action(c_proxy);
+  // `Proxy` test
+  client.action(server_proxy);
+  std::cout << std::endl;
 
-	std::cout << std::endl;
-
-	c_observer.action();
+  // `Observer` test
+  worker.update(1);
 }
