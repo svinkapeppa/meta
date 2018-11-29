@@ -27,8 +27,6 @@ class GenScatterHierarchy;
 
 template <template<typename...> typename Unit, typename... Types>
 class GenScatterHierarchy<Unit, TypeList<Types...>> : public Unit<Types>... {
-public:
-    using Result = TypeList<Unit<Types>...>;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
