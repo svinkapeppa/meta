@@ -10,15 +10,18 @@ class TypeList;
 
 template <>
 class TypeList<> {
+public:
     using Head = NullType;
     using Tail = NullType;
 };
 
 template <typename T, typename... U>
 class TypeList<T, U...> {
+public:
     using Head = T;
     using Tail = TypeList<U...>;
 };
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <int index>
@@ -41,8 +44,67 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+template <typename T, typename... Types>
+class PushFront;
+
+template <typename T, typename... Types>
+class PushFront<TypeList<Types...>, T> {
+public:
+    using Result = TypeList<T, Types...>;
+};
+
+template<typename T>
+struct PushFront<NullType, T> {
+public:
+    using Result = TypeList<T>;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <typename TList, int index>
+class Take {
+public:
+    constexpr static auto Nullable = (index == 0) || std::is_same_v<TypeList<>, TList>;
+    using Result = std::conditional_t<Nullable, NullType, typename PushFront<typename Take<typename TList::Tail, index - 1>::Result, typename TList::Head>::Result>;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <typename TList, int index>
+class Remove;
+
+template <int index>
+class Remove<TypeList<>, index> {
+public:
+    using Result = TypeList<>;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <typename TList, typename... TLists>
+class Join;
+
 template <typename TList>
+class Join<TList, TypeList<TypeList<>>> {
+public:
+    using Result = TypeList<TList>;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <typename TList, int index>
 class GenFibonacciTypeLists {
+private:
+    using BranchTail = typename Take<typename TList::Tail, Fibonacci<index>::Value>::Result;
+    using Branch = typename PushFront<BranchTail, typename TList::Head>::Result;
+    using Rest = typename Remove<typename TList::Tail, Fibonacci<index>::Value>::Result;
+
+public:
+    using Result = typename Join<Branch, typename GenFibonacciTypeLists<Rest, index + 1>::Result>::Result;
+};
+
+template <int index>
+class GenFibonacciTypeLists<TypeList<>, index> {
 public:
     using Result = TypeList<TypeList<>>;
 };
@@ -80,7 +142,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <template <typename> typename SUnit, template <typename, typename> typename LUnit, typename Root, typename TList>
-using GenFibonacciHierarchy = GenScatterHierarchy<SUnit, typename GenLinearBranches<LUnit, Root, typename GenFibonacciTypeLists<TList>::Result>::Result>;
+using GenFibonacciHierarchy = GenScatterHierarchy<SUnit, typename GenLinearBranches<LUnit, Root, typename GenFibonacciTypeLists<TList, 0>::Result>::Result>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -113,7 +175,7 @@ class F {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int main() {
-    using TList = TypeList<A, B, C, D, E, F>;
+    using TList = TypeList<A>;
     using FibonacciHierarchy = GenFibonacciHierarchy<ScatterUnit, LinearUnit, NullType, TList>;
     return 0;
 }
