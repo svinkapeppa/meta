@@ -24,6 +24,26 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+template <typename TypeList>
+class Length {
+public:
+    constexpr static auto Value = Length<typename TypeList::Tail>::Value + 1;
+};
+
+template <>
+class Length<NullType> {
+public:
+    constexpr static auto Value = 0;
+};
+
+template <>
+class Length<TypeList<>> {
+public:
+    constexpr static auto Value = 0;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 template <int index>
 class Fibonacci {
 public:
@@ -63,9 +83,17 @@ public:
 
 template <typename TList, int index>
 class Take {
+private:
+    constexpr static auto Size = std::min(index, Length<TList>::Value);
+
 public:
-    constexpr static auto Nullable = (index == 0) || std::is_same_v<TypeList<>, TList>;
-    using Result = std::conditional_t<Nullable, NullType, typename PushFront<typename Take<typename TList::Tail, index - 1>::Result, typename TList::Head>::Result>;
+    using Result = typename PushFront<typename Take<typename TList::Tail, Size - 1>::Result, typename TList::Head>::Result;
+};
+
+template <typename TList>
+class Take<TList, 0> {
+public:
+    using Result = NullType;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -175,7 +203,7 @@ class F {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int main() {
-    using TList = TypeList<A>;
+    using TList = TypeList<A, B>;
     using FibonacciHierarchy = GenFibonacciHierarchy<ScatterUnit, LinearUnit, NullType, TList>;
     return 0;
 }
