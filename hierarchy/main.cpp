@@ -99,10 +99,16 @@ public:
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename TList, int index>
-class Remove;
+class Remove {
+private:
+    constexpr static auto Size = std::min(index, Length<TList>::Value);
 
-template <int index>
-class Remove<TypeList<>, index> {
+public:
+    using Result = typename Remove<typename TList::Tail, Size - 1>::Result;
+};
+
+template <typename TList>
+class Remove<TList, 0> {
 public:
     using Result = TypeList<>;
 };
@@ -111,6 +117,12 @@ public:
 
 template <typename TList, typename... TLists>
 class Join;
+
+template <typename TList, typename... TLists>
+class Join<TList, TypeList<TLists...>> {
+public:
+    using Result = TypeList<TList, TLists...>;
+};
 
 template <typename TList>
 class Join<TList, TypeList<TypeList<>>> {
@@ -203,7 +215,7 @@ class F {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int main() {
-    using TList = TypeList<A, B>;
+    using TList = TypeList<A, B, C, D, E, F>;
     using FibonacciHierarchy = GenFibonacciHierarchy<ScatterUnit, LinearUnit, NullType, TList>;
     return 0;
 }
