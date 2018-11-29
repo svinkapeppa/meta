@@ -38,7 +38,7 @@ class GenLinearHierarchy : public Unit<typename TList::Head, GenLinearHierarchy<
 };
 
 template <template<typename...> typename Unit, typename Root>
-class GenLinearHierarchy<Unit, TypeList<>, Root> : public Unit<Root> {
+class GenLinearHierarchy<Unit, TypeList<>, Root> : public Root {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
