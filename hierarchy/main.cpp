@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -24,17 +25,31 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/*
+    This template class calculates legnth of the typelist.
+    Main logic is to count the value in a recursive way.
+*/
+
 template <typename TypeList>
 class Length {
 public:
     constexpr static auto Value = Length<typename TypeList::Tail>::Value + 1;
 };
 
+/*
+    Not actually needed.
+    Enables to count length of NullType (there were some talks about it in the class).
+*/
+
 template <>
 class Length<NullType> {
 public:
     constexpr static auto Value = 0;
 };
+
+/*
+    Partial specialization which sets starting point of counting.
+*/
 
 template <>
 class Length<TypeList<>> {
@@ -43,6 +58,12 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+   This template class generates Fibonacci numbers.
+   Realization is quite simple.
+   As a convention zeroth and first numbers of the sequence are both 1.
+*/
 
 template <int index>
 class Fibonacci {
@@ -64,14 +85,30 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/*
+    This template class allows to push type (T) into typelist.
+    This functionality is available because of partial template specialization.
+*/
+
 template <typename T, typename... Types>
 class PushFront;
+
+/*
+    Main logic lies here.
+    Constructs new typelist with new type (T) as head, and other types (Types) as tail.
+*/
 
 template <typename T, typename... Types>
 class PushFront<TypeList<Types...>, T> {
 public:
     using Result = TypeList<T, Types...>;
 };
+
+/*
+    Partial specialiazation in case of pushing into NullType.
+    As a convention it just constructs new typelist containing one type (T).
+    This behaviour is often exploited through the rest of the file.
+*/
 
 template<typename T>
 struct PushFront<NullType, T> {
@@ -80,6 +117,12 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+   This class takes first N (index) elements of the given typelist (TList).
+   Note that if N (index) is too big, then it will be reduced to length of the typelist (TList).
+   So it either takes required number of types (index), or takes the whole typelist (TList).
+*/
 
 template <typename TList, int index>
 class Take {
@@ -90,6 +133,11 @@ public:
     using Result = typename PushFront<typename Take<typename TList::Tail, Size - 1>::Result, typename TList::Head>::Result;
 };
 
+/*
+    Stoping criteria of taking elements of typelist (TList).
+    Result is NullType because of the logic of PushFront class.
+*/
+
 template <typename TList>
 class Take<TList, 0> {
 public:
@@ -97,6 +145,12 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+   This class removes first N (index) elements of the given typelist (TList).
+   Note that if N (index) is too big, then it will be reduced to length of the typelist (TList).
+   So it either removes required number of types (index), or destroys the whole typelist (TList).
+*/
 
 template <typename TList, int index>
 class Remove {
@@ -110,10 +164,15 @@ public:
 template <typename TList>
 class Remove<TList, 0> {
 public:
-    using Result = TypeList<>;
+    using Result = TList;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+    This class add new typelist (TList) to the given typelist of typelists (TLists).
+    Logic is similar to PushFront class.
+*/
 
 template <typename TList, typename... TLists>
 class Join;
@@ -124,13 +183,16 @@ public:
     using Result = TypeList<TList, TLists...>;
 };
 
-template <typename TList>
-class Join<TList, TypeList<TypeList<>>> {
-public:
-    using Result = TypeList<TList>;
-};
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+    This class generates typelists, which will be than used to generate linear branches.
+    Idea is following:
+    1. Take N (index) types from typelist (TList);
+    2. Create temporary typelist;
+    3. Remove this first N (index) types from typelist (TList);
+    4. Recursively repeat and than join all temporary typelists together.
+*/
 
 template <typename TList, int index>
 class GenFibonacciTypeLists {
@@ -151,6 +213,11 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/*
+    This class generates scatter hierarchy.
+    See [1] for details.
+*/
+
 template <template<typename> typename Unit, typename... Types>
 class GenScatterHierarchy;
 
@@ -159,6 +226,11 @@ class GenScatterHierarchy<Unit, TypeList<Types...>> : public Unit<Types>... {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+    This class generates linear hierarchy.
+    See [1] for details.
+*/
 
 template <template<typename, typename> typename Unit, typename TList, typename Root = NullType>
 class GenLinearHierarchy : public Unit<typename TList::Head, GenLinearHierarchy<Unit, typename TList::Tail, Root>> {
@@ -170,6 +242,10 @@ class GenLinearHierarchy<Unit, TypeList<>, Root> : public Root {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/*
+    This class generates branches of the Fibonacci hierarchy.
+*/
+
 template <template <typename, typename> typename Unit, typename Root, typename... TLists>
 class GenLinearBranches;
 
@@ -180,6 +256,12 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+    Realization of generating the Fibonacci hierarchy is the following:
+    1. Create linear branches of the requested size;
+    2. Make root inherit from these branches.
+*/
 
 template <template <typename> typename SUnit, template <typename, typename> typename LUnit, typename Root, typename TList>
 using GenFibonacciHierarchy = GenScatterHierarchy<SUnit, typename GenLinearBranches<LUnit, Root, typename GenFibonacciTypeLists<TList, 0>::Result>::Result>;
