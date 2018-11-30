@@ -2,79 +2,102 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class NullType {};
+class NullType {
+};
 
-template <typename ...> struct TypeList;
+template <typename...>
+class TypeList;
 
-template<>
-struct TypeList<> {
+template <>
+class TypeList<> {
+public:
     using Head = NullType;
     using Tail = NullType;
 };
 
-template<typename T, typename ... U>
-struct TypeList<T, U ...> {
+template <typename T, typename... U>
+class TypeList<T, U...> {
+public:
     using Head = T;
-    using Tail = TypeList<U ...>;
+    using Tail = TypeList<U...>;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, typename Types> struct PushFront;
+template <typename T, typename... Types>
+class PushFront;
 
-template<typename T, typename ... Types>
-struct PushFront<TypeList<Types ...>, T> {
-    using Result = TypeList<T, Types ...>;
+template <typename T, typename... Types>
+class PushFront<TypeList<Types...>, T> {
+public:
+    using Result = TypeList<T, Types...>;
 };
 
-template<typename T>
-struct PushFront<NullType, T> {
+template <typename T>
+class PushFront<NullType, T> {
+public:
     using Result = TypeList<T>;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename TypeList>
-struct Length {
+template <typename TypeList>
+class Length {
+public:
     constexpr static auto Value = Length<typename TypeList::Tail>::Value + 1;
 };
 
-template<>
-struct Length<NullType> {
+template <>
+class Length<NullType> {
+public:
     constexpr static auto Value = 0;
 };
 
-template<>
-struct Length<TypeList<>> {
+template <>
+class Length<TypeList<>> {
+public:
     constexpr static auto Value = 0;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<typename TypeList, typename T> struct Erase;
 
-template<typename T>
-struct Erase<TypeList<>, T> {
+template <typename TypeList, typename T>
+class Erase;
+
+template <typename T>
+class Erase<TypeList<>, T> {
+public:
     using Result = NullType;
 };
 
-template<typename ... Tail, typename T>
-struct Erase<TypeList<T, Tail ...>, T> {
-    using Result = typename TypeList<T, Tail ...>::Tail;
+template <typename... Tail, typename T>
+class Erase<TypeList<T, Tail...>, T> {
+public:
+    using Result = typename TypeList<T, Tail...>::Tail;
 };
 
-template<typename Head, typename ... Tail, typename T>
-struct Erase<TypeList<Head, Tail ...>, T> {
-    using _ = typename Erase<typename TypeList<Head, Tail ...>::Tail, T>::Result;
-    using Result = std::conditional_t<std::is_same_v<_, NullType>,
-        TypeList<Head>, typename PushFront<_, Head>::Result>;
+template <typename Head, typename... Tail, typename T>
+class Erase<TypeList<Head, Tail...>, T> {
+private:
+    using _ = typename Erase<typename TypeList<Head, Tail...>::Tail, T>::Result;
+
+public:
+    using Result = std::conditional_t<std::is_same_v<_, NullType>, TypeList<Head>, typename PushFront<_, Head>::Result>;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class A {};
-class B {};
-class C {};
-class D {};
+class A {
+};
+
+class B {
+};
+
+class C {
+};
+
+class D {
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
