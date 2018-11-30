@@ -301,3 +301,10 @@ int main() {
     using FibonacciHierarchy = GenFibonacciHierarchy<ScatterUnit, LinearUnit, NullType, TList>;
     return 0;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+    Literature:
+    1. Modern C++ Design: Generic Programming and Design Patterns Applied, Andrei Alexandrescu
+*/
