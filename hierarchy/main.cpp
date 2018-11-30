@@ -134,6 +134,18 @@ public:
 };
 
 /*
+    Special case: when typelist is already empty and it was requested to take more than 0 element,
+    main class would trunc Size to zero, but recursive call would also be made. This class catches
+    this behaviour and returns NullType.
+*/
+
+template <>
+class Take<NullType, -1> {
+public:
+    using Result = NullType;
+};
+
+/*
     Stoping criteria of taking elements of typelist (TList).
     Result is NullType because of the logic of PushFront class.
 */
@@ -159,6 +171,12 @@ private:
 
 public:
     using Result = typename Remove<typename TList::Tail, Size - 1>::Result;
+};
+
+template <>
+class Remove<NullType, -1> {
+public:
+    using Result = TypeList<>;
 };
 
 template <typename TList>
