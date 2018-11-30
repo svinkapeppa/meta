@@ -175,7 +175,7 @@ public:
     1. Take N (index) types from typelist (TList);
     2. Create temporary typelist;
     3. Remove this first N (index) types from typelist (TList);
-    4. Recursively repeat and than join all temporary typelists together.
+    4. Recursively repeat and then join all temporary typelists together.
 */
 
 template <typename TList, int index = 0>
